@@ -12,15 +12,13 @@ echo "--- Starting SVN Backup - $date ---"
 mkdir -p /tmp/svn
 
 # List folders
-for i in `find "$1" -type d`; do
-	pushd $i > /dev/null
+for i in `find "$1" -maxdepth 1 -mindepth 1 -type d`; do
+	pushd $i > /dev/null 
 	i=`basename $i`
-
 	# Get full path
 	path=`pwd`
-
 	# Get dates of commit and backup
-	commitdate=`/usr/local/bin/svn log file://$path -r HEAD | grep "|" | sed -e "s/.*| \([0-9]\{4\}.*\)(.*/\1/g"`
+	commitdate=`/usr/bin/svn log file://$path -r HEAD | grep "|" | sed -e "s/.*| \([0-9]\{4\}.*\)(.*/\1/g"`
 	unixcommitdate=`date -d "$commitdate" +%s`
 
 	bkpdate=`stat $backupfolder/$i.gz -c "%y" 2>/dev/null`
@@ -36,7 +34,7 @@ for i in `find "$1" -type d`; do
 	if [[ "$unixcommitdate" -gt "$unixbkpdate" ]]; then
 		rm -fr /tmp/svn/$i
 		echo "----> Backup needed for $i.."
-		/usr/local/bin/svnadmin hotcopy . /tmp/svn/$i
+		/usr/bin/svnadmin hotcopy $path /tmp/svn/$i
 		tar --remove-files -czf $backupfolder/$i.gz /tmp/svn/$i >/dev/null 2>&1
 		rm -fr /tmp/svn/$i
 		echo "Done"
